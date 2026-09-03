@@ -6,12 +6,32 @@ outgrows this template edits its own files and nothing breaks elsewhere.
 ## Using this template
 
 1. `gh repo create beachmonkey-ai/<slug> --public --template BeachMonkey-AI/app-template`
-2. Fill in `index.html`'s title/description, `public/manifest.webmanifest`, `explore.json`, and
-   `CLAUDE.md`.
+2. Fill in `index.html`'s title/description, `public/manifest.webmanifest`, `explore.json`,
+   `CLAUDE.md`, and `package.json`'s `name`/`description` (all still say "app-template" — GitHub's
+   template copy is a literal file copy, it doesn't rename anything for you).
 3. Replace `public/icon.svg` with the app's real icon, then `npm run gen-icons`.
-4. Add the two caller workflows below to the new repo's own `.github/workflows/`.
+4. **Delete the copied `.github/workflows/ci.yml` and `.github/workflows/pages.yml`** — GitHub's
+   template copy brings these over verbatim, but they're `workflow_call`-only and have no `on:
+   push`/`on: pull_request` trigger of their own, so they'll never fire. Add the caller workflow
+   below instead (`.github/workflows/deploy.yml`), which references this template's copies
+   directly rather than duplicating them.
 5. Build the app in `src/` (or replace the vanilla scaffold with a Vite one — see below).
-6. Write the app's own `README.md` in the shape described at the bottom of this file.
+6. After the first push, **enable GitHub Pages** on the new repo, sourced from the `gh-pages`
+   branch (`gh api repos/beachmonkey-ai/<slug>/pages -X POST -f "source[branch]=gh-pages" -f
+   "source[path]=/"`) — this is a per-repo setting, not something the template copy carries over,
+   and `gh-pages` won't exist until the first deploy workflow run creates it.
+7. **Set up this new repo's own plumbing** — Bob does this himself, no need to ask: enable the
+   repo-level "Allow auto-merge" toggle, and set up branch protection (one required review,
+   `dismiss_stale_reviews: true`). See `skill/SKILL.md` in the `bob` repo → "Merging — you never do
+   it" for the exact API calls. Both are safe for Bob to do on a repo he just created; neither is
+   safe to modify later on a repo that already has them.
+8. Write the app's own `README.md` in the shape described at the bottom of this file.
+
+Also check `beachmonkey-ai`'s org-level Actions policy (Settings → Actions → General → Workflow
+permissions) is set to "Read and write permissions" — if it's back to read-only, any reusable
+workflow job requesting `contents: write` (like `pages.yml`'s deploy job) fails outright at
+parse time with a bare `startup_failure` and zero jobs listed, which is a very confusing thing to
+debug from the error alone.
 
 ## Directory structure
 
